@@ -1,0 +1,21 @@
+const APiError=require("../utils/APiError")
+
+const ErrorHandling = (err,req,res,next)=>{
+     
+    const obj={}
+    if(err instanceof APiError){
+
+        obj['statusCode']=err.statusCode
+        obj['message']=err.message
+        obj['stack'] = err.stack
+    }else{
+        
+        obj['statusCode']=400
+        obj['message']=err.message
+        obj['stack'] = err.stack
+
+    }
+    res.status(obj.statusCode).json(obj)
+}
+
+module.exports = ErrorHandling
