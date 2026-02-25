@@ -1,11 +1,12 @@
-const router  = require("express").Router()
+const AuthController = require("../controllers/Auth.controller")
+const Authentication = require("../middlewares/Authentication")
+const Validation = require("../middlewares/Validation")
+const AuthValidation = require("../validations/Auth.validation")
 
-const app =require("express").Router()
+const router = require("express").Router()
 
-router.get("/",(req,res)=>{
+router.post("/register",AuthValidation.RegisterUser,Validation,AuthController.RegisterUser)
+router.post("/login",AuthValidation.LoginUser,Validation,AuthController.LoginUser)
+router.get("/profile",  Authentication,AuthController.ProfileController)
 
-    res.json({msg:"hello world"})
-
-})
-
-module.exports =router
+module.exports = router

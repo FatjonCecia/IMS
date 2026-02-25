@@ -1,21 +1,31 @@
-const APiError=require("../utils/APiError")
+const APiError = require("../utils/APiError");
 
-const ErrorHandling = (err,req,res,next)=>{
-     
-    const obj={}
-    if(err instanceof APiError){
+const ErrorHandling = (err, req, res, next) => {
+  // Always ensure a valid HTTP status code
+  let statusCode = 500; // default
+  let message = "Internal Server Error";
 
-        obj['statusCode']=err.statusCode
-        obj['message']=err.message
-        obj['stack'] = err.stack
-    }else{
-        
-        obj['statusCode']=400
-        obj['message']=err.message
-        obj['stack'] = err.stack
+  if (err instanceof APiError) {
+    statusCode = err.statusCode || 500;
+    message = err.message || message;
+  } else if (err.statusCode) {
+    statusCode = err.statusCode;
+    message = err.message || message;
+  } else if (err.name === "ValidationError") {
+    // Mongoose validation errors
+    statusCode = 400;
+    message = Object.values(err.errors).map(e => e.message).join(", ");
+  } else {
+    message = err.message || message;
+  }
 
-    }
-    res.status(obj.statusCode).json(obj)
-}
+  console.error("Caught error:", err);
 
-module.exports = ErrorHandling
+  res.status(statusCode).json({
+    statusCode,
+    message,
+    stack: err.stack,
+  });
+};
+
+module.exports = ErrorHandling;
