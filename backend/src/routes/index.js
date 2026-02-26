@@ -6,7 +6,14 @@ const routes= [
         path:'/auth',
         route:require("./Auth.route")
     },
-   
+    {
+        path: '/inventory',
+        route: require("./Inventory.routes")
+    },
+    {
+        path: '/location',           // ← add this
+        route: require("./Location.routes") // ← point to your locations.js
+    }
 ]
 
 
