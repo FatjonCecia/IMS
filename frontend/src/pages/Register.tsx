@@ -97,7 +97,7 @@ const Register = () => {
                 name='password'
                 type='password'
                 className='w-full outline-none py-3 px-2 border-[.1px] border-zinc-400 rounded-lg'
-                placeholder='*****'
+                placeholder='********'
               />
               <ErrorMessage component={'p'} className='text-red-500 text-sm' name='password' />
             </div>

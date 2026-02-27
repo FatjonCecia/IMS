@@ -1,22 +1,23 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-export const UserSlice= createSlice({
-
-    name:'UserSlice',
-    initialState:{
-        user: null
+export const UserSlice = createSlice({
+  name: "user", // 👈 make this lowercase (cleaner & consistent)
+  initialState: {
+    user: null,
+  },
+  reducers: {
+    setUser(state, action) {
+      state.user = action.payload;
     },
-    reducers:{
-        setUser(state,action){
-            state.user = action.payload
-        },
-         removeUser(state,action){
-            state.user = null
-        },
-    }
-})
+    removeUser(state) {   // ✅ remove action parameter
+      state.user = null;
+    },
+  },
+});
 
+export const { removeUser, setUser } = UserSlice.actions;
 
-export const {removeUser,setUser } = UserSlice.actions;
+// ✅ selector must match store key
+export const UserSlicePath = (state: any) => state.user.user;
 
-export const UserSclicePath = (state:any)=>state.UserSclice.user
+export default UserSlice.reducer;
