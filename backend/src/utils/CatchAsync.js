@@ -1,9 +1,13 @@
-const CatchAsync= (fn)=>(req,res,next)=>{
-    return Promise.resolve(fn(req,res,next)).catch((e)=>{
+const CatchAsync = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch((err) => {
+    console.error("Caught async error:", err.message);
+    console.error(err.stack);
 
-        console.log("promise cant be bracked");
-        next(e)
-    })
-}
+    const statusCode = err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
 
-module.exports = CatchAsync
+    res.status(statusCode).json({ message });
+  });
+};
+
+module.exports = CatchAsync;

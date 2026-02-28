@@ -2,9 +2,11 @@ import { ErrorMessage, Field, Formik } from 'formik'
 import { Button } from 'primereact/button'
 import { useNavigate, Link } from 'react-router-dom'
 import * as yup from 'yup'
+import { useLoginUserMutation } from '../provider/queries/Auth.query'
 
 const Login = () => {
   const navigate = useNavigate()
+  const [loginUser, loginUserResponse] = useLoginUserMutation()
 
   type User = {
     email: string
@@ -21,23 +23,41 @@ const Login = () => {
     password: yup.string().min(5, "Password must be at least 5 characters").required("Password is required"),
   })
 
-  const onSubmitHandler = (values: User) => {
-    // Simulate a login check
-    if (values.email === 'test@example.com' && values.password === '12345') {
-      alert('Login successful!')
-      localStorage.setItem('token', 'fake-token-123') // save a fake token
-      navigate('/dashboard') // redirect to dashboard
-    } else {
-      alert('Invalid email or password')
+  const onSubmitHandler = async (values: User, { setSubmitting, resetForm }: any) => {
+    try {
+      setSubmitting(true)
+
+      // ✅ Use unwrap() to get actual response or throw error
+      const data = await loginUser(values).unwrap()
+
+      // ✅ Store token in localStorage
+      localStorage.setItem("token", data.token)
+
+      alert("Login successful!")
+      resetForm()
+
+      // ✅ Navigate to homepage
+      navigate("/")
+
+    } catch (err: any) {
+      // Catch backend errors automatically
+      alert(err.data?.message || err.message || "Invalid email or password")
+    } finally {
+      setSubmitting(false)
     }
   }
 
   return (
     <div className='min-h-screen flex items-center justify-center w-full bg-[#eee]'>
-      <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={onSubmitHandler}>
+      <Formik
+        initialValues={initialValues}
+        validationSchema={validationSchema}
+        onSubmit={onSubmitHandler}
+        validateOnMount
+      >
         {({ handleSubmit, isValid, isSubmitting }) => (
           <form onSubmit={handleSubmit} className="w-[96%] md:w-[70%] lg:w-1/3 shadow-md rounded-md pt-10 pb-3 px-4 bg-white">
-            
+
             <div className="mb-3 py-1">
               <label htmlFor="email">Email</label>
               <Field
@@ -64,10 +84,10 @@ const Login = () => {
             <div className="mb-3 py-1 flex items-center justify-center">
               <Button
                 type="submit"
-                disabled={!isValid || isSubmitting}
+                disabled={isSubmitting || !isValid || loginUserResponse.isLoading}
                 className='w-full bg-red-500 text-white py-3 px-2 flex items-center justify-center'
               >
-                Submit
+                {isSubmitting || loginUserResponse.isLoading ? 'Logging in...' : 'Submit'}
               </Button>
             </div>
 
