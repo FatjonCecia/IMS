@@ -6,7 +6,8 @@ import { RouterProvider } from 'react-router-dom'
 import { Routes } from './provider/Route.tsx'
 import { Provider } from 'react-redux'
 import { store } from './provider/Store.tsx'
-
+import "primereact/resources/themes/lara-light-blue/theme.css";
+import "primereact/resources/primereact.min.css";
 
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 

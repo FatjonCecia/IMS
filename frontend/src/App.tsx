@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { useDispatch, useSelector } from 'react-redux'
 import { setUser, UserSlicePath } from './provider/slice/user.slice'
+import "primereact/resources/themes/lara-light-blue/theme.css";
+import "primereact/resources/primereact.min.css";
 
 function App() { 
   const [loading, SetLoading] = useState(true)

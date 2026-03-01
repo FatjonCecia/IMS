@@ -63,18 +63,13 @@ const itemBatchSchema = new mongoose.Schema(
 // BUSINESS VALIDATION LAYER
 //
 
-itemBatchSchema.pre("save", function (next) {
-  // Offer price must be lower than base price
+itemBatchSchema.pre("save", function () {
   if (
     this.offerPrice !== null &&
     this.offerPrice >= this.basePrice
   ) {
-    return next(
-      new Error("Offer price must be lower than base price")
-    );
+    throw new Error("Offer price must be lower than base price");
   }
-
-  next();
 });
 
 const ItemBatch = mongoose.model("ItemBatch", itemBatchSchema);

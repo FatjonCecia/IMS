@@ -5,17 +5,23 @@ import Register from "../pages/Register";
 import HomePage from "../pages/Home";
 import About from "../pages/About";
 import UserPage from "../pages/Users";
+import ProtectedRoute from "./ProtectedRoute";
 
 export const Routes = createBrowserRouter([
   {
-    path: '/',
-    Component: App,   // App is the layout (Header + MainLayout + Outlet)
+    path: "/",
+    Component: App, // Layout (Header + Sidebar + Outlet)
     children: [
-      { path: '', Component: HomePage },   // Home page
-      { path: 'about', Component: About }, // About page
-      { path: 'user', Component: UserPage }, // User page
+      {
+        element: <ProtectedRoute />, // 🔒 Protect internal panel
+        children: [
+          { path: "", Component: HomePage }, // Dashboard (Inventory)
+          { path: "about", Component: About },
+          { path: "user", Component: UserPage },
+        ],
+      },
     ],
   },
-  { path: '/login', Component: Login },
-  { path: '/register', Component: Register },
+  { path: "/login", Component: Login },
+  { path: "/register", Component: Register },
 ]);

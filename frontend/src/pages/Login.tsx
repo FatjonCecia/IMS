@@ -27,21 +27,58 @@ const Login = () => {
     try {
       setSubmitting(true)
 
-      // ✅ Use unwrap() to get actual response or throw error
-      const data = await loginUser(values).unwrap()
+      // 🔥 Get real backend response
+      const response = await loginUser(values).unwrap()
 
-      // ✅ Store token in localStorage
-      localStorage.setItem("token", data.token)
+      console.log("LOGIN RESPONSE:", response) // keep for debugging
+
+      /**
+       * 🔒 Robust token extraction (handles ALL backend formats):
+       * - { token: "..." }
+       * - { accessToken: "..." }
+       * - { data: { token: "..." } }
+       * - { data: { accessToken: "..." } }
+       */
+      const token =
+        response?.token ||
+        response?.accessToken ||
+        response?.data?.token ||
+        response?.data?.accessToken ||
+        null
+
+      if (!token) {
+        console.error("Token not found in response:", response)
+        alert("Login failed: Token not received from server")
+        return
+      }
+
+      // ✅ Store token (CRITICAL for protected inventory routes)
+      localStorage.setItem("token", token)
+
+      // Optional but recommended (for user context)
+      const user =
+        response?.user ||
+        response?.data?.user ||
+        null
+
+      if (user) {
+        localStorage.setItem("user", JSON.stringify(user))
+      }
 
       alert("Login successful!")
       resetForm()
 
-      // ✅ Navigate to homepage
+      // 🚀 Redirect to protected dashboard (Home = Inventory)
       navigate("/")
 
     } catch (err: any) {
-      // Catch backend errors automatically
-      alert(err.data?.message || err.message || "Invalid email or password")
+      console.error("Login error:", err)
+
+      alert(
+        err?.data?.message ||
+        err?.message ||
+        "Invalid email or password"
+      )
     } finally {
       setSubmitting(false)
     }
@@ -56,8 +93,10 @@ const Login = () => {
         validateOnMount
       >
         {({ handleSubmit, isValid, isSubmitting }) => (
-          <form onSubmit={handleSubmit} className="w-[96%] md:w-[70%] lg:w-1/3 shadow-md rounded-md pt-10 pb-3 px-4 bg-white">
-
+          <form
+            onSubmit={handleSubmit}
+            className="w-[96%] md:w-[70%] lg:w-1/3 shadow-md rounded-md pt-10 pb-3 px-4 bg-white"
+          >
             <div className="mb-3 py-1">
               <label htmlFor="email">Email</label>
               <Field
@@ -93,7 +132,10 @@ const Login = () => {
 
             <div className="mb-3 py-1 flex items-center justify-end">
               <p className="inline-flex items-center gap-x-1">
-                Don't Have An Account? <Link className='font-semibold' to={'/register'}>Register</Link>
+                Don't Have An Account?{" "}
+                <Link className='font-semibold' to={'/register'}>
+                  Register
+                </Link>
               </p>
             </div>
 
@@ -102,7 +144,6 @@ const Login = () => {
                 Forget <Link className='font-semibold' to={'#'}>Password?</Link>
               </p>
             </div>
-
           </form>
         )}
       </Formik>

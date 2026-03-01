@@ -1,110 +1,68 @@
 const inventoryService = require("../services/Inventory.service");
 
-//
-// 🔥 GET ALL BATCHES
-//
-
-const getAllBatches = async (req, res) => {
+const getAllBatches = async (req, res, next) => {
   try {
     const { locationId, state } = req.query;
 
     const batches = await inventoryService.getAllBatches({
       locationId,
-      state
+      state,
     });
 
     res.status(200).json({
       success: true,
-      data: batches
+      data: batches,
     });
-
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    next(error); // 🔥 IMPORTANT: don't send res manually
   }
 };
 
-//
-// 🔥 CREATE BATCH
-//
-
-const createBatch = async (req, res) => {
+const createBatch = async (req, res, next) => {
   try {
     const batch = await inventoryService.createBatch(req.body);
 
     res.status(201).json({
       success: true,
-      data: batch
+      data: batch,
     });
-
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+    next(error); // 🔥 THIS PREVENTS "next is not a function" chain issues
   }
 };
 
-//
-// 🔥 UPDATE BATCH
-//
-
-const updateBatch = async (req, res) => {
+const updateBatch = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const batch = await inventoryService.updateBatch(
-      id,
-      req.body
-    );
+    const batch = await inventoryService.updateBatch(id, req.body);
 
     res.status(200).json({
       success: true,
-      data: batch
+      data: batch,
     });
-
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+    next(error);
   }
 };
 
-//
-// 🔥 ACTIVATE OFFER
-//
-
-const activateOffer = async (req, res) => {
+const activateOffer = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { offerPrice } = req.body;
 
-    const batch = await inventoryService.activateOffer(
-      id,
-      offerPrice
-    );
+    const batch = await inventoryService.activateOffer(id, offerPrice);
 
     res.status(200).json({
       success: true,
-      data: batch
+      data: batch,
     });
-
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+    next(error);
   }
 };
 
-//
-// 🔥 DEACTIVATE OFFER
-//
-
-const deactivateOffer = async (req, res) => {
+const deactivateOffer = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -112,25 +70,17 @@ const deactivateOffer = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: batch
+      data: batch,
     });
-
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+    next(error);
   }
 };
-
-//
-// 🔥 EXPORTS
-//
 
 module.exports = {
   getAllBatches,
   createBatch,
   updateBatch,
   activateOffer,
-  deactivateOffer
+  deactivateOffer,
 };
