@@ -13,7 +13,11 @@ const routes= [
     {
         path: '/location',           // ← add this
         route: require("./Location.routes") // ← point to your locations.js
-    }
+    },
+    {
+    path: '/users',
+    route: require("./User.routes")
+}
 ]
 
 

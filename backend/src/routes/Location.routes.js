@@ -38,7 +38,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // ➕ ADD NEW LOCATION
-router.post("/add", async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const { name, type } = req.body;
 

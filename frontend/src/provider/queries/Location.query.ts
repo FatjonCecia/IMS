@@ -25,16 +25,46 @@ export const LocationApi = createApi({
   }),
   tagTypes: ["Locations"],
   endpoints: (builder) => ({
-    // 🏪 GET ALL LOCATIONS (from your /location route)
+    // 🏪 GET ALL LOCATIONS
     getLocations: builder.query<Location[], void>({
       query: () => "/location",
       transformResponse: (response: any) => {
-        // Handles: { data: [...] } OR [...]
+        // Supports both: { data: [...] } and [...]
         return response?.data || response || [];
       },
       providesTags: ["Locations"],
     }),
+
+    // ➕ CREATE LOCATION (NEW - REQUIRED FOR ADD BUTTON)
+    createLocation: builder.mutation<
+      Location,
+      { name: string; type: string; status: string }
+    >({
+      query: (body) => ({
+        url: "/location",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Locations"], //  auto refresh table after create
+    }),
+
+    // (OPTIONAL BUT SENIOR LEVEL) UPDATE LOCATION
+    updateLocation: builder.mutation<
+      Location,
+      { id: string; body: Partial<Location> }
+    >({
+      query: ({ id, body }) => ({
+        url: `/location/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["Locations"],
+    }),
   }),
 });
 
-export const { useGetLocationsQuery } = LocationApi;
+export const {
+  useGetLocationsQuery,
+  useCreateLocationMutation, //  YOU NEED THIS
+  useUpdateLocationMutation, // optional
+} = LocationApi;

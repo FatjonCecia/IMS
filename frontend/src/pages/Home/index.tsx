@@ -25,7 +25,8 @@ type Batch = {
   basePrice: number;
   offerPrice?: number | null;
   expirationDate: string;
-  locationId: string;
+  locationId: any; // can be string OR populated object
+  state?: string; // backend derived state
 };
 
 type Location = {
@@ -63,16 +64,26 @@ const Home = () => {
     skip: !token,
   });
 
-  const [activateOffer, { isLoading: activating }] =
-    useActivateOfferMutation();
+  const [activateOffer] = useActivateOfferMutation();
   const [deactivateOffer] = useDeactivateOfferMutation();
   const [createBatch, { isLoading: creating }] =
     useCreateBatchMutation();
 
-  const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
-  const [offerPrice, setOfferPrice] = useState<number | null>(null);
-  const [dialogVisible, setDialogVisible] = useState(false);
-  const [createDialogVisible, setCreateDialogVisible] = useState(false);
+  const [selectedState, setSelectedState] = useState<string | null>(null);
+  const [selectedLocation, setSelectedLocation] =
+    useState<string | null>(null);
+
+  const [offerDialogVisible, setOfferDialogVisible] =
+    useState(false);
+  const [selectedBatch, setSelectedBatch] = useState<Batch | null>(
+    null
+  );
+  const [offerPrice, setOfferPrice] = useState<number | null>(
+    null
+  );
+
+  const [createDialogVisible, setCreateDialogVisible] =
+    useState(false);
 
   const [newBatch, setNewBatch] = useState({
     title: "",
@@ -82,8 +93,14 @@ const Home = () => {
     locationId: "",
   });
 
-  const [selectedState, setSelectedState] = useState<string | null>(null);
-  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+  // 🔥 CRITICAL: normalize locationId (handles populated + string)
+  const getLocationId = (batch: Batch) => {
+    if (!batch.locationId) return null;
+    if (typeof batch.locationId === "object") {
+      return batch.locationId._id;
+    }
+    return batch.locationId;
+  };
 
   const safeBatches = Array.isArray(batches) ? batches : [];
 
@@ -97,19 +114,28 @@ const Home = () => {
     ];
   }, [locations]);
 
+  // 🔥 FINAL FILTER FIX (State + Location + All options safe)
   const filteredBatches = useMemo(() => {
     return safeBatches.filter((batch: Batch) => {
-      const state = getBatchState(batch);
-      const stateMatch = selectedState ? state === selectedState : true;
-      const locationMatch = selectedLocation
-        ? batch.locationId === selectedLocation
-        : true;
+      const state = batch.state || getBatchState(batch);
+
+      // STATE FILTER
+      const stateMatch =
+        selectedState === null ? true : state === selectedState;
+
+      // LOCATION FILTER (handles populated objects)
+      const batchLocationId = getLocationId(batch);
+      const locationMatch =
+        selectedLocation === null
+          ? true
+          : batchLocationId === selectedLocation;
+
       return stateMatch && locationMatch;
     });
   }, [safeBatches, selectedState, selectedLocation]);
 
   const statusTemplate = (rowData: Batch) => {
-    const state = getBatchState(rowData);
+    const state = rowData.state || getBatchState(rowData);
 
     const severityMap: Record<string, any> = {
       available: "success",
@@ -123,7 +149,6 @@ const Home = () => {
       <Tag
         value={state.replace("_", " ").toUpperCase()}
         severity={severityMap[state]}
-        className="text-xs"
       />
     );
   };
@@ -141,15 +166,29 @@ const Home = () => {
     else if (hoursLeft < 24)
       color = "text-orange-500 font-semibold";
 
-    return <span className={color}>{expiration.toLocaleString()}</span>;
+    return (
+      <span className={color}>
+        {expiration.toLocaleString()}
+      </span>
+    );
   };
 
-  const getBatchId = (batch: Batch) => batch._id || batch.id || "";
+  const offerPriceTemplate = (rowData: Batch) => {
+    if (!rowData.offerPrice) return <span>-</span>;
+    return (
+      <span className="text-blue-600 font-semibold">
+        €{rowData.offerPrice}
+      </span>
+    );
+  };
 
-  const openActivateDialog = (batch: Batch) => {
+  const getBatchId = (batch: Batch) =>
+    batch._id || batch.id || "";
+
+  const openOfferDialog = (batch: Batch) => {
     setSelectedBatch(batch);
     setOfferPrice(batch.offerPrice ?? null);
-    setDialogVisible(true);
+    setOfferDialogVisible(true);
   };
 
   const handleActivateOffer = async () => {
@@ -160,12 +199,45 @@ const Home = () => {
     await activateOffer({
       id,
       offerPrice,
-    });
+    }).unwrap();
 
-    setDialogVisible(false);
+    await refetch(); // 🔥 real-time UI update
+    setOfferDialogVisible(false);
   };
 
-  // 🔥 FINAL FIX FOR 400 ERROR (Backend validation safe)
+ const handleDeactivateOffer = async (batch: Batch) => {
+  const id = getBatchId(batch);
+  await deactivateOffer(id).unwrap(); // ✅ PASS STRING ONLY
+};
+
+  const actionTemplate = (rowData: Batch) => {
+    const state = rowData.state || getBatchState(rowData);
+
+    if (state === "expired" || rowData.quantity === 0) {
+      return <span className="text-gray-400">N/A</span>;
+    }
+
+    if (state === "in_offer") {
+      return (
+        <Button
+          label="Deactivate"
+          severity="secondary"
+          size="small"
+          onClick={() => handleDeactivateOffer(rowData)}
+        />
+      );
+    }
+
+    return (
+      <Button
+        label="Activate Offer"
+        icon="pi pi-bolt"
+        size="small"
+        onClick={() => openOfferDialog(rowData)}
+      />
+    );
+  };
+
   const handleCreateBatch = async () => {
     if (
       !newBatch.title.trim() ||
@@ -178,57 +250,42 @@ const Home = () => {
 
     const expiration = new Date(newBatch.expirationDate);
 
-    if (isNaN(expiration.getTime())) {
-      alert("Invalid expiration date");
-      return;
-    }
-
     if (expiration <= new Date()) {
-      alert("Expiration date must be in the future");
+      alert("Expiration must be in the future");
       return;
     }
 
-    try {
-      const payload = {
-        title: newBatch.title.trim(),
-        quantity: Number(newBatch.quantity),
-        basePrice: Number(newBatch.basePrice),
-        expirationDate: expiration.toISOString(),
-        locationId: newBatch.locationId, // MUST be Mongo ObjectId
-      };
+    await createBatch({
+      title: newBatch.title.trim(),
+      quantity: Number(newBatch.quantity),
+      basePrice: Number(newBatch.basePrice),
+      expirationDate: expiration.toISOString(),
+      locationId: newBatch.locationId,
+    }).unwrap();
 
-      console.log("SENDING PAYLOAD:", payload);
+    await refetch();
 
-      await createBatch(payload).unwrap();
-
-      await refetch(); // 🔥 refresh table after create
-
-      setNewBatch({
-        title: "",
-        quantity: 0,
-        basePrice: 0,
-        expirationDate: "",
-        locationId: "",
-      });
-
-      setCreateDialogVisible(false);
-    } catch (error: any) {
-      console.error("Create batch failed:", error);
-      alert(error?.data?.message || "Backend validation failed");
-    }
+    setCreateDialogVisible(false);
+    setNewBatch({
+      title: "",
+      quantity: 0,
+      basePrice: 0,
+      expirationDate: "",
+      locationId: "",
+    });
   };
 
-  if (!token) {
-    return <div className="p-6">Please login first.</div>;
-  }
-
-  if (isLoading) return <div className="p-6">Loading inventory...</div>;
-  if (isError) return <div className="p-6 text-red-500">API Error</div>;
+  if (!token) return <div className="p-6">Please login first.</div>;
+  if (isLoading) return <div className="p-6">Loading...</div>;
+  if (isError)
+    return <div className="p-6 text-red-500">API Error</div>;
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Inventory Dashboard</h1>
+        <h1 className="text-2xl font-bold">
+          Inventory Dashboard
+        </h1>
         <Button
           label="Add Batch"
           icon="pi pi-plus"
@@ -237,6 +294,7 @@ const Home = () => {
         />
       </div>
 
+      {/* Filters */}
       <div className="flex gap-4">
         <Dropdown
           value={selectedState}
@@ -255,6 +313,7 @@ const Home = () => {
         />
       </div>
 
+      {/* Table */}
       <DataTable
         value={filteredBatches}
         paginator
@@ -269,10 +328,43 @@ const Home = () => {
           header="Base Price"
           body={(row: Batch) => `€${row.basePrice}`}
         />
+        <Column
+          header="Offer Price"
+          body={offerPriceTemplate}
+        />
         <Column header="Expiration" body={expirationTemplate} />
         <Column header="Status" body={statusTemplate} />
+        <Column header="Actions" body={actionTemplate} />
       </DataTable>
 
+      {/* Offer Dialog */}
+      <Dialog
+        header="Activate Offer"
+        visible={offerDialogVisible}
+        style={{ width: "400px" }}
+        onHide={() => setOfferDialogVisible(false)}
+      >
+        <div className="flex flex-col gap-4">
+          <InputNumber
+            value={offerPrice}
+            onValueChange={(e) =>
+              setOfferPrice(e.value ?? null)
+            }
+            mode="currency"
+            currency="EUR"
+            locale="en-US"
+            placeholder="Offer Price (€)"
+            className="w-full"
+          />
+          <Button
+            label="Confirm Offer"
+            icon="pi pi-check"
+            onClick={handleActivateOffer}
+          />
+        </div>
+      </Dialog>
+
+      {/* Create Batch Dialog */}
       <Dialog
         header="Create New Batch"
         visible={createDialogVisible}
@@ -285,13 +377,14 @@ const Home = () => {
             placeholder="Batch Title"
             value={newBatch.title}
             onChange={(e) =>
-              setNewBatch({ ...newBatch, title: e.target.value })
+              setNewBatch({
+                ...newBatch,
+                title: e.target.value,
+              })
             }
           />
 
           <InputNumber
-            className="w-full"
-            placeholder="Quantity"
             value={newBatch.quantity}
             onValueChange={(e) =>
               setNewBatch({
@@ -299,11 +392,10 @@ const Home = () => {
                 quantity: e.value ?? 0,
               })
             }
+            placeholder="Quantity"
           />
 
           <InputNumber
-            className="w-full"
-            placeholder="Base Price (€)"
             value={newBatch.basePrice}
             onValueChange={(e) =>
               setNewBatch({
@@ -314,6 +406,7 @@ const Home = () => {
             mode="currency"
             currency="EUR"
             locale="en-US"
+            placeholder="Base Price (€)"
           />
 
           <input

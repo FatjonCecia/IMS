@@ -27,7 +27,7 @@ const MainLayout = ({ children }:{children:React.ReactNode}) => {
 
                       <MenuItem component={<Link to="/" />} icon={<MdOutlineSpaceDashboard  className="text-2xl" />} > Dashboard </MenuItem>
         
-            <MenuItem component={<Link to="/about" />} icon={<FiBox className="text-2xl" />}> ItemBatch </MenuItem>
+            <MenuItem component={<Link to="/about" />} icon={<FiBox className="text-2xl" />}>Location</MenuItem>
 
             <MenuItem component={<Link to="/user" />} icon={<FiUser className="text-2xl" />} > Users </MenuItem>
                   </Menu>
