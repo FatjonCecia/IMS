@@ -146,7 +146,7 @@ const UserPage = () => {
           <Column field="email" header="Email" />
           <Column header="Role" body={roleTemplate} />
           <Column header="Created" body={dateTemplate} />
-          <Column
+          <Column 
             header="Delete User"
             body={actionTemplate}
             style={{ width: "120px" }}
