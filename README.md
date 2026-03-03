@@ -21,7 +21,7 @@ Frontend:
 👉 https://ims-one-phi.vercel.app
 
 Backend API:
-👉 https://ims-backend-lahd.onrender.com/api/v1
+👉 https://ims-backend-1ahd.onrender.com/api/v1
 
 Tech Stack
 Frontend
