@@ -32,7 +32,7 @@ const Header = () => {
             <button className='lg:hidden' onClick={sidebarHandlerToggle}><HiOutlineMenuAlt3 className='text-2xl' /> </button>
             <button className='hidden lg:flex' onClick={sidebarHandler}><HiOutlineMenuAlt3 className='text-2xl' /> </button></div>
             <div className="end">
-            <button title='logout' className='hidden lg:flex' onClick={logoutHandler}><IoLogOutOutline className='text-2xl' /> </button>
+            <button title='logout' className='flex' onClick={logoutHandler}><IoLogOutOutline className='text-2xl' /> </button>
             </div>
               </div>
                 </header>

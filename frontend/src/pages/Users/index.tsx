@@ -117,6 +117,8 @@ const UserPage = () => {
   const actionTemplate = (row: User) => (
     <div className="flex gap-2">
       <Button
+
+      label="REMOVE"
         icon="pi pi-trash"
         severity="danger"
         size="small"
