@@ -5,7 +5,6 @@ import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { InputText } from "primereact/inputtext";
 import { Tag } from "primereact/tag";
-
 import {
   useGetAllUsersQuery,
   useCreateUserMutation,
@@ -20,21 +19,8 @@ type User = {
 };
 
 const UserPage = () => {
-  const token =
-    localStorage.getItem("token") ||
-    localStorage.getItem("accessToken");
-
-  // ✅ FIX 1: No params (query expects void)
-  const {
-    data: users = [], // already an array from transformResponse
-    isLoading,
-    isError,
-    refetch,
-  } = useGetAllUsersQuery(undefined, { skip: !token });
-
-  const [createUser, { isLoading: creating }] =
-    useCreateUserMutation();
-  const [deleteUser] = useDeleteUserMutation();
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   const [dialogVisible, setDialogVisible] = useState(false);
 
@@ -44,10 +30,47 @@ const UserPage = () => {
     password: "",
   });
 
+  const token =
+    localStorage.getItem("token") ||
+    localStorage.getItem("accessToken");
+
+  const {
+    data: users = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useGetAllUsersQuery(undefined, { skip: !token });
+
+  const [createUser, { isLoading: creating }] =
+    useCreateUserMutation();
+  const [deleteUser] = useDeleteUserMutation();
+
+  // ✅ Email validation
+  const isEmailValid = (email: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  // ✅ Strong password validation
+  const isPasswordValid = (password: string) =>
+    password.length >= 8 &&
+    /[A-Z]/.test(password) &&
+    /\d/.test(password);
+
   // 🔥 Create User
   const handleCreateUser = async () => {
     if (!newUser.name || !newUser.email || !newUser.password) {
       alert("All fields are required");
+      return;
+    }
+
+    if (!isEmailValid(newUser.email)) {
+      setEmailError("Invalid email address");
+      return;
+    }
+
+    if (!isPasswordValid(newUser.password)) {
+      setPasswordError(
+        "Password must be at least 8 characters, include 1 uppercase letter and 1 number"
+      );
       return;
     }
 
@@ -60,6 +83,8 @@ const UserPage = () => {
         password: "",
       });
 
+      setEmailError("");
+      setPasswordError("");
       setDialogVisible(false);
       refetch();
     } catch (error: any) {
@@ -68,7 +93,6 @@ const UserPage = () => {
     }
   };
 
-  // 🔥 Delete User
   const handleDelete = async (id: string) => {
     if (!window.confirm("Delete this user?")) return;
 
@@ -101,21 +125,13 @@ const UserPage = () => {
     </div>
   );
 
-  if (!token) {
-    return <div className="p-6">Please login first.</div>;
-  }
-
-  if (isLoading) {
-    return <div className="p-6">Loading users...</div>;
-  }
-
-  if (isError) {
+  if (!token) return <div className="p-6">Please login first.</div>;
+  if (isLoading) return <div className="p-6">Loading users...</div>;
+  if (isError)
     return <div className="p-6 text-red-500">Failed to load users</div>;
-  }
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold">Users Management</h1>
@@ -132,10 +148,9 @@ const UserPage = () => {
         />
       </div>
 
-      {/* Users Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <DataTable
-          value={users} // ✅ already array
+          value={users}
           paginator
           rows={10}
           responsiveLayout="scroll"
@@ -146,7 +161,7 @@ const UserPage = () => {
           <Column field="email" header="Email" />
           <Column header="Role" body={roleTemplate} />
           <Column header="Created" body={dateTemplate} />
-          <Column 
+          <Column
             header="Delete User"
             body={actionTemplate}
             style={{ width: "120px" }}
@@ -154,7 +169,6 @@ const UserPage = () => {
         </DataTable>
       </div>
 
-      {/* Add User Dialog */}
       <Dialog
         header="Create New User"
         visible={dialogVisible}
@@ -176,24 +190,44 @@ const UserPage = () => {
           <div>
             <label className="text-sm font-medium">Email</label>
             <InputText
-              className="w-full"
+              className={`w-full ${emailError ? "p-invalid" : ""}`}
               value={newUser.email}
-              onChange={(e) =>
-                setNewUser({ ...newUser, email: e.target.value })
-              }
+              onChange={(e) => {
+                const value = e.target.value;
+                setNewUser({ ...newUser, email: value });
+
+                if (!isEmailValid(value)) {
+                  setEmailError("Invalid email address");
+                } else {
+                  setEmailError("");
+                }
+              }}
             />
+            {emailError && <small className="p-error">{emailError}</small>}
           </div>
 
           <div>
             <label className="text-sm font-medium">Password</label>
             <InputText
               type="password"
-              className="w-full"
+              className={`w-full ${passwordError ? "p-invalid" : ""}`}
               value={newUser.password}
-              onChange={(e) =>
-                setNewUser({ ...newUser, password: e.target.value })
-              }
+              onChange={(e) => {
+                const value = e.target.value;
+                setNewUser({ ...newUser, password: value });
+
+                if (!isPasswordValid(value)) {
+                  setPasswordError(
+                    "Min 8 chars, 1 uppercase, 1 number"
+                  );
+                } else {
+                  setPasswordError("");
+                }
+              }}
             />
+            {passwordError && (
+              <small className="p-error">{passwordError}</small>
+            )}
           </div>
 
           <Button
