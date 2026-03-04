@@ -36,9 +36,6 @@ type Location = {
   status: string;
 };
 
-/* =========================
-   ALL STATES ARRAY
-========================= */
 const ALL_STATES = [
   "available",
   "near_expiry",
@@ -80,15 +77,9 @@ const Home = () => {
   const [createBatch, { isLoading: creating }] =
     useCreateBatchMutation();
 
-  /* =========================
-     STATE FILTER
-  ========================= */
   const [selectedState, setSelectedState] =
     useState<string | string[] | null>(ALL_STATES);
 
-  /* =========================
-     LOCATION FILTER
-  ========================= */
   const ALL_LOCATIONS = useMemo(() => {
     return locations.map((loc: Location) => loc._id);
   }, [locations]);
@@ -112,9 +103,6 @@ const Home = () => {
     ];
   }, [locations, ALL_LOCATIONS]);
 
-  /* =========================
-     DIALOG STATES
-  ========================= */
   const [offerDialogVisible, setOfferDialogVisible] =
     useState(false);
   const [selectedBatch, setSelectedBatch] =
@@ -133,9 +121,6 @@ const Home = () => {
     locationId: "",
   });
 
-  /* =========================
-     HELPERS
-  ========================= */
   const getLocationId = (batch: Batch) => {
     if (!batch.locationId) return null;
     if (typeof batch.locationId === "object") {
@@ -149,14 +134,10 @@ const Home = () => {
 
   const safeBatches = Array.isArray(batches) ? batches : [];
 
-  /* =========================
-     FILTER LOGIC
-  ========================= */
   const filteredBatches = useMemo(() => {
     return safeBatches.filter((batch: Batch) => {
       const state = batch.state || getBatchState(batch);
 
-      // STATE FILTER
       let stateMatch = true;
 
       if (Array.isArray(selectedState)) {
@@ -165,7 +146,6 @@ const Home = () => {
         stateMatch = state === selectedState;
       }
 
-      // LOCATION FILTER
       let locationMatch = true;
       const batchLocationId = getLocationId(batch);
 
@@ -182,9 +162,6 @@ const Home = () => {
     });
   }, [safeBatches, selectedState, selectedLocation]);
 
-  /* =========================
-     TEMPLATES
-  ========================= */
   const statusTemplate = (rowData: Batch) => {
     const state = rowData.state || getBatchState(rowData);
 
@@ -267,9 +244,6 @@ const Home = () => {
     );
   };
 
-  /* =========================
-     OFFER LOGIC
-  ========================= */
   const openOfferDialog = (batch: Batch) => {
     setSelectedBatch(batch);
     setOfferPrice(batch.offerPrice ?? null);
@@ -298,9 +272,6 @@ const Home = () => {
     await refetch();
   };
 
-  /* =========================
-     CREATE BATCH
-  ========================= */
   const handleCreateBatch = async () => {
     if (
       !newBatch.title.trim() ||
@@ -345,11 +316,7 @@ const Home = () => {
   if (isLoading)
     return <div className="p-6">Loading...</div>;
   if (isError)
-    return (
-      <div className="p-6 text-red-500">
-        API Error
-      </div>
-    );
+    return <div className="p-6 text-red-500">API Error</div>;
 
   return (
     <div className="p-6 space-y-6">
@@ -385,6 +352,12 @@ const Home = () => {
           }
           className="w-56"
         />
+
+        <Button
+          icon="pi pi-refresh"
+          label="Refresh"
+          onClick={refetch}
+        />
       </div>
 
       <DataTable
@@ -399,9 +372,7 @@ const Home = () => {
         <Column
           field="basePrice"
           header="Base Price"
-          body={(row: Batch) =>
-            `€${row.basePrice}`
-          }
+          body={(row: Batch) => `€${row.basePrice}`}
         />
         <Column
           header="Offer Price"
@@ -444,6 +415,90 @@ const Home = () => {
             label="Confirm Offer"
             icon="pi pi-check"
             onClick={handleActivateOffer}
+          />
+        </div>
+      </Dialog>
+
+      <Dialog
+        header="Create New Batch"
+        visible={createDialogVisible}
+        style={{ width: "450px" }}
+        onHide={() =>
+          setCreateDialogVisible(false)
+        }
+      >
+        <div className="flex flex-col gap-4">
+          <input
+            className="w-full p-2 border rounded"
+            placeholder="Batch Title"
+            value={newBatch.title}
+            onChange={(e) =>
+              setNewBatch({
+                ...newBatch,
+                title: e.target.value,
+              })
+            }
+          />
+
+          <InputNumber
+            value={newBatch.quantity}
+            onValueChange={(e) =>
+              setNewBatch({
+                ...newBatch,
+                quantity: e.value ?? 0,
+              })
+            }
+            placeholder="Quantity"
+          />
+
+          <InputNumber
+            value={newBatch.basePrice}
+            onValueChange={(e) =>
+              setNewBatch({
+                ...newBatch,
+                basePrice: e.value ?? 0,
+              })
+            }
+            mode="currency"
+            currency="EUR"
+            locale="en-US"
+            placeholder="Base Price (€)"
+          />
+
+          <input
+            type="datetime-local"
+            className="w-full p-2 border rounded"
+            value={newBatch.expirationDate}
+            onChange={(e) =>
+              setNewBatch({
+                ...newBatch,
+                expirationDate: e.target.value,
+              })
+            }
+          />
+
+          <Dropdown
+            value={newBatch.locationId}
+            options={locations.map((loc: Location) => ({
+              label: `${loc.name} (${loc.type})`,
+              value: loc._id,
+            }))}
+            onChange={(e) =>
+              setNewBatch({
+                ...newBatch,
+                locationId: e.value,
+              })
+            }
+            placeholder="Select Location"
+            className="w-full"
+          />
+
+          <Button
+            label="Create Batch"
+            icon="pi pi-check"
+            loading={creating}
+            onClick={handleCreateBatch}
+            className="w-full"
           />
         </div>
       </Dialog>
